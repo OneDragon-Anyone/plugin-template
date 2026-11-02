@@ -85,11 +85,22 @@ def is_excluded(path: Path) -> bool:
 def const_path_for_app(
     package_dir: Path, manifest: dict[str, Any], app: dict[str, Any] | None = None
 ) -> Path:
+    """常量文件路径。
+
+    新规范用固定名 ``const.py``；还没有迁移的插件仍是 ``<id>_const.py``，
+    文件存在时按旧名处理，保证两种布局都能生成和校验。
+    """
     if app is None:
+        fixed = package_dir / "const.py"
+        if fixed.is_file():
+            return fixed
         return package_dir / f"{plugin_id(manifest)}_const.py"
 
     app_id = str(app.get("id", ""))
     feature = app_id.removeprefix(f"{plugin_id(manifest)}_")
+    fixed = package_dir / feature / "const.py"
+    if fixed.is_file():
+        return fixed
     return package_dir / feature / f"{feature}_const.py"
 
 

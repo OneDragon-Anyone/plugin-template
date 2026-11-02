@@ -188,8 +188,11 @@ def validate_package(
 
     required = [
         ("__init__.py", "INIT_MISSING"),
-        (f"{current_id}_factory.py", "FACTORY_MISSING"),
     ]
+    factory_name = "factory.py"
+    if not (package_dir / factory_name).is_file():
+        factory_name = f"{current_id}_factory.py"
+    required.append((factory_name, "FACTORY_MISSING"))
     for name, code in required:
         if (package_dir / name).is_file():
             reporter.pass_("file", f"{package_dir.name}/{name}")
