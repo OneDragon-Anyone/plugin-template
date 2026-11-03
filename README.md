@@ -1,4 +1,4 @@
-# ZZZ OD Plugin Template
+# ZZZOD 插件模板仓
 
 绝区零一条龙（ZenlessZoneZero-OneDragon）第三方插件模板。用本模板创建仓库、写代码、推送 tag，GitHub Actions 会自动校验并发布 `<插件ID>.zip`，再到 [插件仓库](https://onedragon-anyone.github.io/plugin-data/) 点一下提交即可上架。
 
@@ -14,7 +14,7 @@ your-repo/
 ├── scripts/                   # 本地调试用的生成和校验脚本
 └── sample_plugin/             # 插件包，目录名 = 插件 ID，会被整体打进 zip
     ├── plugin.json            # 上架商店必需：网页展示用的元数据，不参与运行时身份
-    ├── __init__.py
+    ├── __init__.py            # 必需：插件包按 Python 包加载
     ├── const.py               # 运行时身份：APP_ID 等，手写
     ├── factory.py
     ├── app.py
@@ -75,10 +75,15 @@ sample_plugin/    -> coffee_route_plus/
 
 | 字段 | 说明 |
 | --- | --- |
-| `version` | 展示用版本号。发版 tag 必须是 `v` + `version`，例如 `v1.2.0` |
-| `versionCode` | 正整数，**每次发版必须比上一次大**。客户端只用它判断更新 |
+| `id` | 必须等于插件包目录名和 `const.py` 的 `APP_ID`，匹配 `^[a-z][a-z0-9_]*$` |
+| `name`、`summary` | 非空字符串，商店列表里展示 |
+| `version` | 版本号，例如 `0.1.0`。发版 tag 必须是 `v` + `version`；客户端拿它和已装插件的 `PLUGIN_VERSION` 比较，决定要不要提示更新 |
+| `versionCode` | 正整数，**每次发版必须递增**，不能重复或回退。插件仓库用它判断这次发布是否比已收录的新，不大于就会被拒收 |
+| `author.name`、`author.url` | 两个都必须填，`url` 要带 `http://` 或 `https://` |
+| `homepage` | 插件仓库地址，**必须带 `http://` 或 `https://`** |
 | `cover` | 可选。插件包内的相对路径，png / jpg / webp，不超过 512 KB，推荐 16:9 |
-| `risk` | 风险标签：`filesystem` `network` `account` `automation` `ocr` `yolo` `clipboard` `process`，如实声明 |
+| `risk` | 必须是数组，取值只能是 `filesystem` `network` `account` `automation` `ocr` `yolo` `clipboard` `process`；没有风险时写 `[]` |
+| `compatibility` | 三个子字段都必填：`minAppVersion`（如 `0.0.0`）、`minCoreApiVersion`（整数）、`python`（如 `>=3.11`） |
 
 `plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify` 等运行行为只写在 `const.py`，`plugin.json` 里不要放，也不再有 `apps`。`const.py` 示例：
 
@@ -88,8 +93,8 @@ APP_NAME = "示例插件"
 DEFAULT_GROUP = False
 NEED_NOTIFY = False
 PLUGIN_VERSION = "0.1.0"      # 必填：客户端据此判断已安装版本，必须等于 plugin.json 的 version
-PLUGIN_AUTHOR = "Your Name"   # 以下三项可选，客户端用于插件列表展示，以及把已安装插件对应到商店条目
-PLUGIN_HOMEPAGE = "https://github.com/your-name/sample-plugin"
+PLUGIN_AUTHOR = "Your Name"   # 以下三项可选：客户端用于插件列表展示
+PLUGIN_HOMEPAGE = "https://github.com/your-name/sample-plugin"  # 写插件仓库地址，客户端还会用它兜底匹配商店条目
 PLUGIN_DESCRIPTION = "展示第三方插件模板的最小结构。"
 # 可选：INTERNAL_APP、PRIORITY、KEY_SIM_DIR
 ```
@@ -103,6 +108,8 @@ python scripts/validate_plugin.py --strict
 # 本地打包，输出 dist/<id>.zip 和 sha256
 python scripts/build_zip.py
 ```
+
+打包有体积上限：`<id>.zip` 不超过 50 MB，解压后总量不超过它的 10 倍。超过会被校验拒绝。
 
 CI 不使用你仓库里的 `scripts/`，而是使用官方模板对应版本的脚本，所以本地脚本过旧时可从模板复制最新版。
 
@@ -149,10 +156,10 @@ jobs:
     uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@v2
 ```
 
-- `@v2` 跟随官方 v2 版本的修复，不会有破坏性变化。
+- `@v2` 指向官方发布的 v2（一个 tag，内容固定），之后官方的修复不会自动包含进来。需要拿到新修复时，把 `@v2` 换成官方发布的新 tag。
 - 想完全锁定，可把 `@v2` 换成具体的提交 sha，例如 `@3f2c1e...`。
 
-> Fork 和 Use this template 创建的仓库**不会自动跟随模板更新**。旧版模板仓库里的 `release.yml` 直接运行 `softprops/action-gh-release`，不会生成 `<id>.zip`。请把 `.github/workflows/release.yml` 和 `validate.yml` 替换为本仓库的版本，并删除根目录的 `plugin.json` 和 `scripts/sync_manifest.py`。
+> Fork 和 Use this template 创建的仓库**不会自动跟随模板更新**。旧版模板仓库里的 `release.yml` 直接运行 `softprops/action-gh-release`，不会生成 `<id>.zip`。请把 `.github/workflows/release.yml` 和 `validate.yml` 替换为本仓库的版本，并删除根目录的 `plugin.json` 和 `scripts/generate_const.py`。
 
 ## 提交到插件仓库
 
