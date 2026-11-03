@@ -87,8 +87,11 @@ APP_ID = "sample_plugin"      # 运行时身份，必须等于目录名和 plugi
 APP_NAME = "示例插件"
 DEFAULT_GROUP = False
 NEED_NOTIFY = False
+PLUGIN_VERSION = "0.1.0"      # 必填：客户端据此判断已安装版本，必须等于 plugin.json 的 version
+PLUGIN_AUTHOR = "Your Name"   # 以下三项可选，客户端用于插件列表展示，以及把已安装插件对应到商店条目
+PLUGIN_HOMEPAGE = "https://github.com/your-name/sample-plugin"
+PLUGIN_DESCRIPTION = "展示第三方插件模板的最小结构。"
 # 可选：INTERNAL_APP、PRIORITY、KEY_SIM_DIR
-# 可选：PLUGIN_VERSION，写了就必须等于 plugin.json 的 version
 ```
 
 ## 本地命令
@@ -115,7 +118,7 @@ ZenlessZoneZero-OneDragon/plugins/<插件ID>/
 
 ## 发布版本
 
-1. 修改 `plugin.json` 的 `version`，并把 `versionCode` 加 1。
+1. 修改 `plugin.json` 的 `version`，并把 `versionCode` 加 1；同时把 `const.py` 的 `PLUGIN_VERSION` 改成同一个值（不一致会被校验拒绝）。
 2. 提交。
 3. 打 tag 并推送：
 

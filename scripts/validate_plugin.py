@@ -200,11 +200,14 @@ def validate_package(
     else:
         reporter.fail("INIT_MISSING", f"{package_dir.name}/__init__.py")
 
-    # 版本只以 plugin.json 为准；常量文件里写了 PLUGIN_VERSION 时必须一致
+    # 客户端用常量文件的 PLUGIN_VERSION 作为已安装版本去比对商店的新版本，
+    # 所以上架插件必须写，并且与 plugin.json 的 version（发版 tag 的依据）一致
     const_files = find_const_files(package_dir)
     if len(const_files) == 1:
         const_version = read_const_value(const_files[0], "PLUGIN_VERSION")
-        if const_version not in (None, "") and const_version != manifest.get("version"):
+        if not is_non_empty_str(const_version):
+            reporter.fail("VERSION_MISSING", f"{const_files[0].name} PLUGIN_VERSION (must be a string literal)")
+        elif const_version != manifest.get("version"):
             reporter.fail(
                 "VERSION_MISMATCH",
                 f"const PLUGIN_VERSION {const_version!r} != plugin.json version {manifest.get('version')!r}",
