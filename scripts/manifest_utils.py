@@ -144,3 +144,40 @@ def is_excluded(path: Path) -> bool:
     return any(part in EXCLUDED_NAMES for part in path.parts) or (
         path.suffix in EXCLUDED_SUFFIXES
     )
+
+
+GENERATED_BEGIN = "# >>> generated from plugin.json (scripts/generate_const.py), do not edit"
+GENERATED_END = "# <<< generated"
+
+
+def py_string(value: Any) -> str:
+    return json.dumps(str(value), ensure_ascii=False)
+
+
+def render_generated_block(manifest: dict[str, Any]) -> str:
+    """plugin.json 与 const 里重复的元数据字段，由 json 生成到 const 的标记块中。
+
+    身份（APP_ID、APP_NAME）和运行行为（DEFAULT_GROUP 等）不在此列，手写在 const，
+    校验时只与 json 的 id、name 比对。
+    """
+    author = manifest.get("author") if isinstance(manifest.get("author"), dict) else {}
+    return (
+        f"{GENERATED_BEGIN}\n"
+        f"PLUGIN_VERSION = {py_string(manifest.get('version', ''))}\n"
+        f"PLUGIN_AUTHOR = {py_string(author.get('name', ''))}\n"
+        f"PLUGIN_HOMEPAGE = {py_string(manifest.get('homepage', ''))}\n"
+        f"PLUGIN_DESCRIPTION = {py_string(manifest.get('summary', ''))}\n"
+        f"{GENERATED_END}\n"
+    )
+
+
+def apply_generated_block(text: str, manifest: dict[str, Any]) -> str:
+    """把生成块写入 const 文本：已有标记块则替换，没有则追加到文件末尾。"""
+    block = render_generated_block(manifest)
+    text = text.replace("\r\n", "\n")
+    begin = text.find(GENERATED_BEGIN)
+    end = text.find(GENERATED_END, begin) if begin != -1 else -1
+    if begin != -1 and end != -1:
+        tail = text[end + len(GENERATED_END):].lstrip("\n")
+        return text[:begin] + block + (("\n" + tail) if tail else "")
+    return text.rstrip("\n") + "\n\n" + block

@@ -85,23 +85,43 @@ sample_plugin/    -> coffee_route_plus/
 | `risk` | 必须是数组，取值只能是 `filesystem` `network` `account` `automation` `ocr` `yolo` `clipboard` `process`；没有风险时写 `[]` |
 | `compatibility` | 三个子字段都必填：`minAppVersion`（如 `0.0.0`）、`minCoreApiVersion`（整数）、`python`（如 `>=3.11`） |
 
-`plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify` 等运行行为只写在 `const.py`，`plugin.json` 里不要放，也不再有 `apps`。`const.py` 示例：
+`plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify` 等运行行为只写在 `const.py`，`plugin.json` 里不要放，也不再有 `apps`。
+
+json 和 const 里有几个字段重复，按下面分工，避免漂移：
+
+| 字段 | 来源 | 说明 |
+| --- | --- | --- |
+| `APP_ID` ↔ `id` | const 手写 | 运行时身份。CI 比对 `APP_ID == 目录名 == plugin.json.id` |
+| `APP_NAME` ↔ `name` | const 手写 | CI 比对，不一致报 `NAME_MISMATCH` |
+| `PLUGIN_VERSION` ↔ `version` | **从 json 生成** | 客户端用它判断已安装版本，必须与 json 一致 |
+| `PLUGIN_AUTHOR` ↔ `author.name` | **从 json 生成** | 客户端列表展示 |
+| `PLUGIN_HOMEPAGE` ↔ `homepage` | **从 json 生成** | 客户端把已安装插件对应到商店条目 |
+| `PLUGIN_DESCRIPTION` ↔ `summary` | **从 json 生成** | 客户端展示 |
+| `DEFAULT_GROUP`、`NEED_NOTIFY`、`INTERNAL_APP`、`PRIORITY`、`KEY_SIM_DIR` | const 手写 | 运行行为，json 里没有 |
+
+`scripts/generate_const.py` 把「从 json 生成」的四项写进 `const.py` 末尾的标记块，标记块外的内容不动；CI 用 `--check` 检查，过期报 `CONST_OUTDATED`。改完 `plugin.json` 后运行一次即可。`const.py` 示例：
 
 ```python
-APP_ID = "sample_plugin"      # 运行时身份，必须等于目录名和 plugin.json 的 id
+APP_ID = "sample_plugin"
 APP_NAME = "示例插件"
 DEFAULT_GROUP = False
 NEED_NOTIFY = False
-PLUGIN_VERSION = "0.1.0"      # 必填：客户端据此判断已安装版本，必须等于 plugin.json 的 version
-PLUGIN_AUTHOR = "Your Name"   # 以下三项可选：客户端用于插件列表展示
-PLUGIN_HOMEPAGE = "https://github.com/your-name/sample-plugin"  # 写插件仓库地址，客户端还会用它兜底匹配商店条目
-PLUGIN_DESCRIPTION = "展示第三方插件模板的最小结构。"
 # 可选：INTERNAL_APP、PRIORITY、KEY_SIM_DIR
+
+# >>> generated from plugin.json (scripts/generate_const.py), do not edit
+PLUGIN_VERSION = "0.1.0"
+PLUGIN_AUTHOR = "Your Name"
+PLUGIN_HOMEPAGE = "https://github.com/your-name/sample-plugin"
+PLUGIN_DESCRIPTION = "展示第三方插件模板的最小结构。"
+# <<< generated
 ```
 
 ## 本地命令
 
 ```shell
+# 把 plugin.json 里重复的元数据生成到 const.py（改完 plugin.json 后运行）
+python scripts/generate_const.py
+
 # 校验仓库
 python scripts/validate_plugin.py --strict
 
@@ -125,8 +145,8 @@ ZenlessZoneZero-OneDragon/plugins/<插件ID>/
 
 ## 发布版本
 
-1. 修改 `plugin.json` 的 `version`，并把 `versionCode` 加 1；同时把 `const.py` 的 `PLUGIN_VERSION` 改成同一个值（不一致会被校验拒绝）。
-2. 提交。
+1. 修改 `plugin.json` 的 `version`，并把 `versionCode` 加 1。
+2. 运行 `python scripts/generate_const.py` 同步 `const.py` 的 `PLUGIN_VERSION` 等字段，提交。
 3. 打 tag 并推送：
 
 ```shell
@@ -159,7 +179,7 @@ jobs:
 - `@v2` 指向官方发布的 v2（一个 tag，内容固定），之后官方的修复不会自动包含进来。需要拿到新修复时，把 `@v2` 换成官方发布的新 tag。
 - 想完全锁定，可把 `@v2` 换成具体的提交 sha，例如 `@3f2c1e...`。
 
-> Fork 和 Use this template 创建的仓库**不会自动跟随模板更新**。旧版模板仓库里的 `release.yml` 直接运行 `softprops/action-gh-release`，不会生成 `<id>.zip`。请把 `.github/workflows/release.yml` 和 `validate.yml` 替换为本仓库的版本，并删除根目录的 `plugin.json` 和 `scripts/generate_const.py`。
+> Fork 和 Use this template 创建的仓库**不会自动跟随模板更新**。旧版模板仓库里的 `release.yml` 直接运行 `softprops/action-gh-release`，不会生成 `<id>.zip`。请把 `.github/workflows/release.yml` 和 `validate.yml` 替换为本仓库的版本，并删除根目录的 `plugin.json` 和 `scripts/sync_manifest.py`。
 
 ## 提交到插件仓库
 

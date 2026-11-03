@@ -18,6 +18,7 @@ from manifest_utils import (
     PLUGIN_ID_PATTERN,
     RISK_TAGS,
     app_id_from_const,
+    apply_generated_block,
     find_const_files,
     find_factory_files,
     find_package_dirs,
@@ -200,17 +201,22 @@ def validate_package(
     else:
         reporter.fail("INIT_MISSING", f"{package_dir.name}/__init__.py")
 
-    # 客户端用常量文件的 PLUGIN_VERSION 作为已安装版本去比对商店的新版本，
-    # 所以上架插件必须写，并且与 plugin.json 的 version（发版 tag 的依据）一致
+    # 与 json 重复的元数据（PLUGIN_VERSION 等，客户端用来判断已安装版本）由
+    # generate_const.py 生成到 const 的标记块；名称是手写的身份信息，只比对
     const_files = find_const_files(package_dir)
     if len(const_files) == 1:
-        const_version = read_const_value(const_files[0], "PLUGIN_VERSION")
-        if not is_non_empty_str(const_version):
-            reporter.fail("VERSION_MISSING", f"{const_files[0].name} PLUGIN_VERSION (must be a string literal)")
-        elif const_version != manifest.get("version"):
+        const_path = const_files[0]
+        display = f"{package_dir.name}/{const_path.name}"
+        current = const_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+        if current != apply_generated_block(current, manifest):
+            reporter.fail("CONST_OUTDATED", f"{display} (run scripts/generate_const.py)")
+        else:
+            reporter.pass_("const", display)
+        const_name = read_const_value(const_path, "APP_NAME")
+        if const_name != manifest.get("name"):
             reporter.fail(
-                "VERSION_MISMATCH",
-                f"const PLUGIN_VERSION {const_version!r} != plugin.json version {manifest.get('version')!r}",
+                "NAME_MISMATCH",
+                f"const APP_NAME {const_name!r} != plugin.json name {manifest.get('name')!r}",
             )
 
     for path in package_dir.rglob("*"):
