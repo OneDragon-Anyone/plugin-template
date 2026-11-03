@@ -13,7 +13,7 @@ your-repo/
 │   └── validate.yml           # 推送和 PR 时校验
 ├── scripts/                   # 本地调试用的生成和校验脚本
 └── sample_plugin/             # 插件包，目录名 = 插件 ID，会被整体打进 zip
-    ├── plugin.json            # 商店展示和发布信息，不参与运行时身份
+    ├── plugin.json            # 上架商店必需：网页展示用的元数据，不参与运行时身份
     ├── __init__.py
     ├── const.py               # 运行时身份：APP_ID 等，手写
     ├── factory.py
@@ -80,7 +80,7 @@ sample_plugin/    -> coffee_route_plus/
 | `cover` | 可选。插件包内的相对路径，png / jpg / webp，不超过 512 KB，推荐 16:9 |
 | `risk` | 风险标签：`filesystem` `network` `account` `automation` `ocr` `yolo` `clipboard` `process`，如实声明 |
 
-`plugin.json` 只给商店和 CI 用，客户端不靠它判断身份。`defaultGroup`、`needNotify` 等运行行为只写在 `const.py`，`plugin.json` 里不要放，也不再有 `apps`。`const.py` 示例：
+`plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify` 等运行行为只写在 `const.py`，`plugin.json` 里不要放，也不再有 `apps`。`const.py` 示例：
 
 ```python
 APP_ID = "sample_plugin"      # 运行时身份，必须等于目录名和 plugin.json 的 id
