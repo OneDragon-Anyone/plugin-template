@@ -42,6 +42,7 @@ class Reporter:
     def __init__(self, quiet: bool) -> None:
         self.quiet = quiet
         self.errors: list[dict[str, str]] = []
+        self.warnings: list[dict[str, str]] = []
 
     @property
     def failed(self) -> bool:
@@ -50,6 +51,11 @@ class Reporter:
     def pass_(self, label: str, detail: str) -> None:
         if not self.quiet:
             print(f"PASS {label} {detail}")
+
+    def warn(self, code: str, detail: str) -> None:
+        self.warnings.append({"code": code, "detail": detail})
+        if not self.quiet:
+            print(f"WARN {code} {detail}")
 
     def fail(self, code: str, detail: str) -> None:
         self.errors.append({"code": code, "detail": detail})
@@ -105,6 +111,20 @@ def validate_manifest_fields(reporter: Reporter, manifest: dict[str, Any]) -> No
         or not is_non_empty_str(compatibility.get("python"))
     ):
         reporter.fail("INVALID_FIELD", "compatibility")
+
+
+DEPRECATED_MANIFEST_FIELDS: dict[str, str] = {
+    "defaultGroup": "move to DEFAULT_GROUP in const.py",
+    "needNotify": "move to NEED_NOTIFY in const.py",
+    "apps": "ignored by the client; one plugin has one app",
+}
+
+
+def warn_deprecated_fields(reporter: Reporter, manifest: dict[str, Any]) -> None:
+    """旧版 plugin.json 的字段：已上架的插件还带着它们，只警告，不拒绝，也不再校验取值。"""
+    for field, hint in DEPRECATED_MANIFEST_FIELDS.items():
+        if field in manifest:
+            reporter.warn("DEPRECATED_FIELD", f"{field} ({hint})")
 
 
 def validate_cover(
@@ -185,6 +205,7 @@ def validate_package(
         return {}, None
 
     validate_manifest_fields(reporter, manifest)
+    warn_deprecated_fields(reporter, manifest)
     current_id = plugin_id(manifest)
 
     # 运行时身份只认常量文件的 APP_ID；plugin.json 的 id 只做一致性比对
@@ -358,6 +379,7 @@ def main() -> int:
                 {
                     "ok": not reporter.failed,
                     "errors": reporter.errors,
+                    "warnings": reporter.warnings,
                     "manifest": manifest,
                     "coverFile": cover_file,
                     "hasAppSetting": has_app_setting,

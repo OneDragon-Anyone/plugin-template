@@ -85,7 +85,7 @@ sample_plugin/    -> coffee_route_plus/
 | `risk` | 必须是数组，取值只能是 `filesystem` `network` `account` `automation` `ocr` `yolo` `clipboard` `process`；没有风险时写 `[]` |
 | `compatibility` | 三个子字段都必填：`minAppVersion`（如 `0.0.0`）、`minCoreApiVersion`（整数）、`python`（如 `>=3.11`） |
 
-`plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify` 等运行行为只写在 `const.py`，`plugin.json` 里不要放，也不再有 `apps`。
+`plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify`、`apps` 是**已废弃**的旧字段：新插件不要写，运行行为（`DEFAULT_GROUP`、`NEED_NOTIFY` 等）只写在 `const.py`；已上架插件的 json 里还带着也不会被拒绝，校验只给 `WARN DEPRECATED_FIELD` 提示，取值不再校验，客户端也不读取。
 
 json 和 const 里有几个字段重复，按下面分工，避免漂移：
 
