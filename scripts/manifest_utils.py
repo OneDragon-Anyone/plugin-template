@@ -171,8 +171,32 @@ def render_generated_block(manifest: dict[str, Any]) -> str:
     )
 
 
+GENERATED_NAMES = ("PLUGIN_VERSION", "PLUGIN_AUTHOR", "PLUGIN_HOMEPAGE", "PLUGIN_DESCRIPTION")
+
+
+def _literal_assignments(text: str) -> dict[str, Any]:
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return {}
+    values: dict[str, Any] = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id in GENERATED_NAMES:
+                    try:
+                        values[target.id] = ast.literal_eval(node.value)
+                    except ValueError:
+                        pass
+    return values
+
+
 def apply_generated_block(text: str, manifest: dict[str, Any]) -> str:
-    """把生成块写入 const 文本：已有标记块则替换，没有则追加到文件末尾。"""
+    """把生成块写入 const 文本：已有标记块则替换，没有则追加到文件末尾。
+
+    兼容 v1 模板整文件生成的 const（没有标记块，但已带 PLUGIN_* 字段）：值与 json 一致时
+    原样保留，不报过期；不一致时去掉旧的 PLUGIN_* 赋值再追加标记块。
+    """
     block = render_generated_block(manifest)
     text = text.replace("\r\n", "\n")
     begin = text.find(GENERATED_BEGIN)
@@ -180,4 +204,14 @@ def apply_generated_block(text: str, manifest: dict[str, Any]) -> str:
     if begin != -1 and end != -1:
         tail = text[end + len(GENERATED_END):].lstrip("\n")
         return text[:begin] + block + (("\n" + tail) if tail else "")
+
+    existing = _literal_assignments(text)
+    if existing:
+        expected = _literal_assignments(block)
+        if existing == expected:
+            return text
+        text = "\n".join(
+            line for line in text.split("\n")
+            if line.split("=", 1)[0].strip() not in GENERATED_NAMES
+        )
     return text.rstrip("\n") + "\n\n" + block

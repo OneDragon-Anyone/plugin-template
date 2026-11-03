@@ -173,11 +173,11 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@v2
+    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@v1
 ```
 
-- `@v2` 指向官方发布的 v2（一个 tag，内容固定），之后官方的修复不会自动包含进来。需要拿到新修复时，把 `@v2` 换成官方发布的新 tag。
-- 想完全锁定，可把 `@v2` 换成具体的提交 sha，例如 `@3f2c1e...`。
+- `@v1` 跟随官方 v1 版本的修复，不会有破坏性变化。
+- 想完全锁定，可把 `@v1` 换成具体的提交 sha，例如 `@3f2c1e...`。
 
 > Fork 和 Use this template 创建的仓库**不会自动跟随模板更新**。旧版模板仓库里的 `release.yml` 直接运行 `softprops/action-gh-release`，不会生成 `<id>.zip`。请把 `.github/workflows/release.yml` 和 `validate.yml` 替换为本仓库的版本，并删除根目录的 `plugin.json` 和 `scripts/sync_manifest.py`。
 
