@@ -1,4 +1,4 @@
-# ZZZ OD Plugin Template
+# ZZZOD 插件模板仓
 
 绝区零一条龙（ZenlessZoneZero-OneDragon）第三方插件模板。用本模板创建仓库、写代码、推送 tag，GitHub Actions 会自动校验并发布 `<插件ID>.zip`，再到 [插件仓库](https://onedragon-anyone.github.io/plugin-data/) 点一下提交即可上架。
 
@@ -13,17 +13,19 @@ your-repo/
 │   └── validate.yml           # 推送和 PR 时校验
 ├── scripts/                   # 本地调试用的生成和校验脚本
 └── sample_plugin/             # 插件包，目录名 = 插件 ID，会被整体打进 zip
-    ├── plugin.json            # 唯一的手写元数据
-    ├── __init__.py
-    ├── sample_plugin_const.py # 由 plugin.json 生成，不要手改
-    ├── sample_plugin_factory.py
+    ├── plugin.json            # 上架商店必需：网页展示用的元数据，不参与运行时身份
+    ├── __init__.py            # 必需：插件包按 Python 包加载
+    ├── const.py               # 运行时身份：APP_ID 等，手写
+    ├── factory.py
+    ├── app.py
     └── ...
 ```
 
 规则：
 
-- 仓库根目录下**恰好一个**子目录包含 `plugin.json`，该目录就是插件包。
-- 插件 ID 匹配 `^[a-z][a-z0-9_]*$`，且 `plugin.json.id == 插件包目录名 == APP_ID`。
+- 仓库根目录下**恰好一个**子目录第一层同时有 `factory.py` 和 `const.py`，该目录就是插件包。旧写法 `*_factory.py` / `*_const.py` 继续兼容，但不推荐。
+- 插件 ID 匹配 `^[a-z][a-z0-9_]*$`，运行时身份只认 `const.py` 的 `APP_ID`：`APP_ID == 插件包目录名`，且 `plugin.json.id` 必须与它一致（只做比对）。
+- 一个仓库只有一个插件，一个插件只有一个应用。需要由父应用调用的子功能，做成另一个插件，并在其 `const.py` 里写 `INTERNAL_APP = True`。
 - 根目录**不要**再放 `plugin.json`。
 - 插件包内**不能**有 `requirements.txt`、`pyproject.toml`、`setup.py` 等依赖声明文件。插件只能使用一条龙主程序已有的依赖，不能引入第三方包。
 
@@ -34,7 +36,7 @@ your-repo/
 3. **允许 Actions 写 Release**：`Settings → Actions → General → Workflow permissions` 选 *Read and write permissions*。
 4. **推荐开启不可变 Release**：`Settings → General → Releases` 勾选 *Enable release immutability*。开启后已发布的版本无法被替换，插件仓库会显示"不可变"标记。
 5. 改名：把 `sample_plugin` 换成你的插件 ID（见下文改名清单）。
-6. 编辑 `<id>/plugin.json`，运行生成和校验脚本。
+6. 编辑 `<id>/const.py` 和 `<id>/plugin.json`，运行校验脚本。
 7. 提交并推送，等 `Validate Plugin` 通过。
 
 ## 改名清单
@@ -42,14 +44,10 @@ your-repo/
 假设插件 ID 为 `coffee_route_plus`：
 
 ```text
-sample_plugin/                              -> coffee_route_plus/
-sample_plugin/sample_plugin_const.py        -> coffee_route_plus/coffee_route_plus_const.py
-sample_plugin/sample_plugin_factory.py      -> coffee_route_plus/coffee_route_plus_factory.py
-sample_plugin/sample_plugin.py              -> coffee_route_plus/coffee_route_plus.py
-sample_plugin/sample_plugin_app_setting.py  -> coffee_route_plus/coffee_route_plus_app_setting.py
+sample_plugin/    -> coffee_route_plus/
 ```
 
-同步修改 Python 导入、类名和 `plugin.json` 里的 `id`、`homepage`、`author`。
+文件名都是固定的（`const.py`、`factory.py`、`app.py`、`app_setting.py`），不用改。需要同步修改 `const.py` 里的 `APP_ID`、Python 导入、类名，以及 `plugin.json` 里的 `id`、`homepage`、`author`。
 
 ## plugin.json
 
@@ -60,8 +58,6 @@ sample_plugin/sample_plugin_app_setting.py  -> coffee_route_plus/coffee_route_pl
   "summary": "展示第三方插件模板的最小结构。",
   "version": "0.1.0",
   "versionCode": 1,
-  "defaultGroup": false,
-  "needNotify": false,
   "author": {
     "name": "Your Name",
     "url": "https://github.com/your-name"
@@ -73,31 +69,47 @@ sample_plugin/sample_plugin_app_setting.py  -> coffee_route_plus/coffee_route_pl
     "minAppVersion": "0.0.0",
     "minCoreApiVersion": 1,
     "python": ">=3.11"
-  },
-  "apps": []
+  }
 }
 ```
 
 | 字段 | 说明 |
 | --- | --- |
-| `version` | 展示用版本号。发版 tag 必须是 `v` + `version`，例如 `v1.2.0` |
-| `versionCode` | 正整数，**每次发版必须比上一次大**。客户端只用它判断更新 |
+| `id` | 必须等于插件包目录名和 `const.py` 的 `APP_ID`，匹配 `^[a-z][a-z0-9_]*$` |
+| `name`、`summary` | 非空字符串，商店列表里展示 |
+| `version` | 版本号，例如 `0.1.0`。发版 tag 必须是 `v` + `version`；客户端拿它和已装插件的 `PLUGIN_VERSION` 比较，决定要不要提示更新 |
+| `versionCode` | 正整数，**每次发版必须递增**，不能重复或回退。插件仓库用它判断这次发布是否比已收录的新，不大于就会被拒收 |
+| `author.name`、`author.url` | 两个都必须填，`url` 要带 `http://` 或 `https://` |
+| `homepage` | 插件仓库地址，**必须带 `http://` 或 `https://`** |
 | `cover` | 可选。插件包内的相对路径，png / jpg / webp，不超过 512 KB，推荐 16:9 |
-| `risk` | 风险标签：`filesystem` `network` `account` `automation` `ocr` `yolo` `clipboard` `process`，如实声明 |
-| `apps` | 可选。额外应用，`id` 必须是 `<插件ID>_<功能名>` |
+| `risk` | 必须是数组，取值只能是 `filesystem` `network` `account` `automation` `ocr` `yolo` `clipboard` `process`；没有风险时写 `[]` |
+| `compatibility` | 三个子字段都必填：`minAppVersion`（如 `0.0.0`）、`minCoreApiVersion`（整数）、`python`（如 `>=3.11`） |
+
+`plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify` 等运行行为只写在 `const.py`，`plugin.json` 里不要放，也不再有 `apps`。`const.py` 示例：
+
+```python
+APP_ID = "sample_plugin"      # 运行时身份，必须等于目录名和 plugin.json 的 id
+APP_NAME = "示例插件"
+DEFAULT_GROUP = False
+NEED_NOTIFY = False
+PLUGIN_VERSION = "0.1.0"      # 必填：客户端据此判断已安装版本，必须等于 plugin.json 的 version
+PLUGIN_AUTHOR = "Your Name"   # 以下三项可选：客户端用于插件列表展示
+PLUGIN_HOMEPAGE = "https://github.com/your-name/sample-plugin"  # 写插件仓库地址，客户端还会用它兜底匹配商店条目
+PLUGIN_DESCRIPTION = "展示第三方插件模板的最小结构。"
+# 可选：INTERNAL_APP、PRIORITY、KEY_SIM_DIR
+```
 
 ## 本地命令
 
 ```shell
-# 根据 plugin.json 生成 *_const.py（改完 plugin.json 必须运行）
-python scripts/generate_const.py
-
 # 校验仓库
 python scripts/validate_plugin.py --strict
 
 # 本地打包，输出 dist/<id>.zip 和 sha256
 python scripts/build_zip.py
 ```
+
+打包有体积上限：`<id>.zip` 不超过 50 MB，解压后总量不超过它的 10 倍。超过会被校验拒绝。
 
 CI 不使用你仓库里的 `scripts/`，而是使用官方模板对应版本的脚本，所以本地脚本过旧时可从模板复制最新版。
 
@@ -113,8 +125,8 @@ ZenlessZoneZero-OneDragon/plugins/<插件ID>/
 
 ## 发布版本
 
-1. 修改 `plugin.json` 的 `version`，并把 `versionCode` 加 1。
-2. 运行 `python scripts/generate_const.py`，提交。
+1. 修改 `plugin.json` 的 `version`，并把 `versionCode` 加 1；同时把 `const.py` 的 `PLUGIN_VERSION` 改成同一个值（不一致会被校验拒绝）。
+2. 提交。
 3. 打 tag 并推送：
 
 ```shell
@@ -141,13 +153,13 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@v1
+    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@v2
 ```
 
-- `@v1` 跟随官方 v1 版本的修复，不会有破坏性变化。
-- 想完全锁定，可把 `@v1` 换成具体的提交 sha，例如 `@3f2c1e...`。
+- `@v2` 指向官方发布的 v2（一个 tag，内容固定），之后官方的修复不会自动包含进来。需要拿到新修复时，把 `@v2` 换成官方发布的新 tag。
+- 想完全锁定，可把 `@v2` 换成具体的提交 sha，例如 `@3f2c1e...`。
 
-> Fork 和 Use this template 创建的仓库**不会自动跟随模板更新**。旧版模板仓库里的 `release.yml` 直接运行 `softprops/action-gh-release`，不会生成 `<id>.zip`。请把 `.github/workflows/release.yml` 和 `validate.yml` 替换为本仓库的版本，并删除根目录的 `plugin.json` 和 `scripts/sync_manifest.py`。
+> Fork 和 Use this template 创建的仓库**不会自动跟随模板更新**。旧版模板仓库里的 `release.yml` 直接运行 `softprops/action-gh-release`，不会生成 `<id>.zip`。请把 `.github/workflows/release.yml` 和 `validate.yml` 替换为本仓库的版本，并删除根目录的 `plugin.json` 和 `scripts/generate_const.py`。
 
 ## 提交到插件仓库
 
@@ -160,4 +172,4 @@ jobs:
 
 ## 设置页
 
-`sample_plugin_app_setting.py` 提供 `AppSettingProvider` 示例。接入真实设置界面时，把 `get_setting_cls()` 中的占位导入替换为自己的 `BaseInterface` 或 `AppSettingFlyout` 类。
+`app_setting.py` 提供 `AppSettingProvider` 示例。接入真实设置界面时，把 `get_setting_cls()` 中的占位导入替换为自己的 `BaseInterface` 或 `AppSettingFlyout` 类。
