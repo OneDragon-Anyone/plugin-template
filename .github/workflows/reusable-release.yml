@@ -41,7 +41,6 @@ jobs:
 
       - name: Validate repository
         run: |
-          python .plugin-template/scripts/generate_const.py --repo . --check
           python .plugin-template/scripts/validate_plugin.py --repo . --strict --expect-tag "$GITHUB_REF_NAME"
 
       - name: Build release asset

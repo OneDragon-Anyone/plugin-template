@@ -77,7 +77,7 @@ sample_plugin/    -> coffee_route_plus/
 | --- | --- |
 | `id` | 必须等于插件包目录名和 `const.py` 的 `APP_ID`，匹配 `^[a-z][a-z0-9_]*$` |
 | `name`、`summary` | 非空字符串，商店列表里展示 |
-| `version` | 版本号，例如 `0.1.0`。发版 tag 必须是 `v` + `version`；客户端拿它和已装插件的 `PLUGIN_VERSION` 比较，决定要不要提示更新 |
+| `version` | 版本号，例如 `0.1.0`。发版 tag 必须是 `v` + `version`；客户端读取它，和商店的最新版本比较，决定要不要提示更新 |
 | `versionCode` | 正整数，**每次发版必须递增**，不能重复或回退。插件仓库用它判断这次发布是否比已收录的新，不大于就会被拒收 |
 | `author.name`、`author.url` | 两个都必须填，`url` 要带 `http://` 或 `https://` |
 | `homepage` | 插件仓库地址，**必须带 `http://` 或 `https://`** |
@@ -87,19 +87,14 @@ sample_plugin/    -> coffee_route_plus/
 
 `plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify`、`apps` 是**已废弃**的旧字段：新插件不要写，运行行为（`DEFAULT_GROUP`、`NEED_NOTIFY` 等）只写在 `const.py`；已上架插件的 json 里还带着也不会被拒绝，校验只给 `WARN DEPRECATED_FIELD` 提示，取值不再校验，客户端也不读取。
 
-json 和 const 里有几个字段重复，按下面分工，避免漂移：
+客户端直接读 `plugin.json` 的 `version`、`author.name`、`homepage`、`summary` 作为界面展示、更新比对和商店条目匹配的依据；`const.py` 只放身份和运行行为，两边没有重复需要维护的字段：
 
-| 字段 | 来源 | 说明 |
-| --- | --- | --- |
-| `APP_ID` ↔ `id` | const 手写 | 运行时身份。CI 比对 `APP_ID == 目录名 == plugin.json.id` |
-| `APP_NAME` ↔ `name` | const 手写 | CI 比对，不一致报 `NAME_MISMATCH` |
-| `PLUGIN_VERSION` ↔ `version` | **从 json 生成** | 客户端用它判断已安装版本，必须与 json 一致 |
-| `PLUGIN_AUTHOR` ↔ `author.name` | **从 json 生成** | 客户端列表展示 |
-| `PLUGIN_HOMEPAGE` ↔ `homepage` | **从 json 生成** | 客户端把已安装插件对应到商店条目 |
-| `PLUGIN_DESCRIPTION` ↔ `summary` | **从 json 生成** | 客户端展示 |
-| `DEFAULT_GROUP`、`NEED_NOTIFY`、`INTERNAL_APP`、`PRIORITY`、`KEY_SIM_DIR` | const 手写 | 运行行为，json 里没有 |
+| 文件 | 内容 |
+| --- | --- |
+| `plugin.json` | 元数据：`version`、`author`、`homepage`、`summary`、`cover`、`risk`、`compatibility` 等 |
+| `const.py` | `APP_ID`、`APP_NAME`、`DEFAULT_GROUP`、`NEED_NOTIFY`，可选 `INTERNAL_APP`、`PRIORITY`、`KEY_SIM_DIR` |
 
-`scripts/generate_const.py` 把「从 json 生成」的四项写进 `const.py` 末尾的标记块，标记块外的内容不动；CI 用 `--check` 检查，过期报 `CONST_OUTDATED`。改完 `plugin.json` 后运行一次即可。`const.py` 示例：
+只有 `id` / `name` 是两边都出现的：CI 比对 `APP_ID == 目录名 == plugin.json.id`、`APP_NAME == plugin.json.name`，不一致会失败。旧版 const 里的 `PLUGIN_VERSION` 等字段不再被客户端读取，也不被检查，可以删掉。`const.py` 示例：
 
 ```python
 APP_ID = "sample_plugin"
@@ -107,21 +102,11 @@ APP_NAME = "示例插件"
 DEFAULT_GROUP = False
 NEED_NOTIFY = False
 # 可选：INTERNAL_APP、PRIORITY、KEY_SIM_DIR
-
-# >>> generated from plugin.json (scripts/generate_const.py), do not edit
-PLUGIN_VERSION = "0.1.0"
-PLUGIN_AUTHOR = "Your Name"
-PLUGIN_HOMEPAGE = "https://github.com/your-name/sample-plugin"
-PLUGIN_DESCRIPTION = "展示第三方插件模板的最小结构。"
-# <<< generated
 ```
 
 ## 本地命令
 
 ```shell
-# 把 plugin.json 里重复的元数据生成到 const.py（改完 plugin.json 后运行）
-python scripts/generate_const.py
-
 # 校验仓库
 python scripts/validate_plugin.py --strict
 
@@ -146,7 +131,7 @@ ZenlessZoneZero-OneDragon/plugins/<插件ID>/
 ## 发布版本
 
 1. 修改 `plugin.json` 的 `version`，并把 `versionCode` 加 1。
-2. 运行 `python scripts/generate_const.py` 同步 `const.py` 的 `PLUGIN_VERSION` 等字段，提交。
+2. 提交。
 3. 打 tag 并推送：
 
 ```shell
