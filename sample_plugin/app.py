@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from one_dragon.base.operation.application_base import Application
 
-from . import sample_plugin_const
+from . import const
 from .utils.helper import build_status_message
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ class SamplePluginApp(Application):
         Application.__init__(
             self,
             ctx,
-            sample_plugin_const.APP_ID,
+            const.APP_ID,
             node_max_retry_times=3,
         )
 
