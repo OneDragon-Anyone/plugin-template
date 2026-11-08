@@ -2,16 +2,19 @@
 
 绝区零一条龙（ZenlessZoneZero-OneDragon）第三方插件模板。用本模板创建仓库、写代码、推送 tag，GitHub Actions 会自动校验并发布 `<插件ID>.zip`，再到 [插件仓库](https://onedragon-anyone.github.io/plugin-data/) 点一下提交即可上架。
 
+写插件时的细节（改名、`plugin.json` 字段、插件数据、设置页、本地命令与调试）见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
 ## 目录结构
 
 ```text
 your-repo/
 ├── README.md                  # 必需，展示在插件详情页
+├── CONTRIBUTING.md            # 插件开发规范：改名、字段、数据存储
 ├── LICENSE                    # 必需
 ├── .github/workflows/
 │   ├── release.yml            # 推送 v* tag 时发布（只调用官方可复用工作流）
 │   └── validate.yml           # 推送和 PR 时校验
-├── scripts/                   # 本地调试用的生成和校验脚本
+├── scripts/                   # 本地校验和打包脚本
 └── sample_plugin/             # 插件包，目录名 = 插件 ID，会被整体打进 zip
     ├── plugin.json            # 上架商店必需：网页展示用的元数据，不参与运行时身份
     ├── __init__.py            # 必需：插件包按 Python 包加载
@@ -35,98 +38,9 @@ your-repo/
 2. **启用 Actions**：Fork 出来的仓库默认禁用工作流。进入仓库 `Actions` 页，点 *I understand my workflows, go ahead and enable them*。
 3. **允许 Actions 写 Release**：`Settings → Actions → General → Workflow permissions` 选 *Read and write permissions*。
 4. **推荐开启不可变 Release**：`Settings → General → Releases` 勾选 *Enable release immutability*。开启后已发布的版本无法被替换，插件仓库会显示"不可变"标记。
-5. 改名：把 `sample_plugin` 换成你的插件 ID（见下文改名清单）。
-6. 编辑 `<id>/const.py` 和 `<id>/plugin.json`，运行校验脚本。
+5. 改名：把 `sample_plugin` 换成你的插件 ID，清单见 [改名清单](CONTRIBUTING.md#改名清单)。
+6. 编辑 `<id>/const.py` 和 `<id>/plugin.json`，用 [本地命令](CONTRIBUTING.md#本地命令) 里的校验脚本跑一遍。
 7. 提交并推送，等 `Validate Plugin` 通过。
-
-## 改名清单
-
-假设插件 ID 为 `coffee_route_plus`：
-
-```text
-sample_plugin/    -> coffee_route_plus/
-```
-
-文件名都是固定的（`const.py`、`factory.py`、`app.py`、`app_setting.py`），不用改。需要同步修改 `const.py` 里的 `APP_ID`、Python 导入、类名，以及 `plugin.json` 里的 `id`、`homepage`、`author`。
-
-## plugin.json
-
-```json
-{
-  "id": "sample_plugin",
-  "name": "示例插件",
-  "summary": "展示第三方插件模板的最小结构。",
-  "version": "0.1.0",
-  "versionCode": 1,
-  "author": {
-    "name": "Your Name",
-    "url": "https://github.com/your-name"
-  },
-  "homepage": "https://github.com/your-name/sample-plugin",
-  "cover": "cover.png",
-  "risk": ["automation"],
-  "compatibility": {
-    "minAppVersion": "0.0.0",
-    "minCoreApiVersion": 1,
-    "python": ">=3.11"
-  }
-}
-```
-
-| 字段 | 说明 |
-| --- | --- |
-| `id` | 必须等于插件包目录名和 `const.py` 的 `APP_ID`，匹配 `^[a-z][a-z0-9_]*$` |
-| `name`、`summary` | 非空字符串，商店列表里展示 |
-| `version` | 版本号，例如 `0.1.0`。发版 tag 必须是 `v` + `version`；客户端读取它，和商店的最新版本比较，决定要不要提示更新 |
-| `versionCode` | 正整数，**每次发版必须递增**，不能重复或回退。插件仓库用它判断这次发布是否比已收录的新，不大于就会被拒收 |
-| `author.name`、`author.url` | 两个都必须填，`url` 要带 `http://` 或 `https://` |
-| `homepage` | 插件仓库地址，**必须带 `http://` 或 `https://`** |
-| `cover` | 可选。插件包内的相对路径，png / jpg / webp，不超过 512 KB，推荐 16:9 |
-| `risk` | 必须是数组，取值只能是 `filesystem` `network` `account` `automation` `ocr` `yolo` `clipboard` `process`；没有风险时写 `[]` |
-| `compatibility` | 三个子字段都必填：`minAppVersion`（如 `0.0.0`）、`minCoreApiVersion`（整数）、`python`（如 `>=3.11`） |
-
-`plugin.json` 是上架商店的**必需文件**，商店网页的元数据（名称、简介、版本、作者、风险、兼容性、封面）都从它读取；客户端运行时不靠它判断身份。`defaultGroup`、`needNotify`、`apps` 是**已废弃**的旧字段：新插件不要写，运行行为（`DEFAULT_GROUP`、`NEED_NOTIFY` 等）只写在 `const.py`；已上架插件的 json 里还带着也不会被拒绝，校验只给 `WARN DEPRECATED_FIELD` 提示，取值不再校验，客户端也不读取。
-
-客户端直接读 `plugin.json` 的 `version`、`author.name`、`homepage`、`summary` 作为界面展示、更新比对和商店条目匹配的依据；`const.py` 只放身份和运行行为，两边没有重复需要维护的字段：
-
-| 文件 | 内容 |
-| --- | --- |
-| `plugin.json` | 元数据：`version`、`author`、`homepage`、`summary`、`cover`、`risk`、`compatibility` 等 |
-| `const.py` | `APP_ID`、`APP_NAME`、`DEFAULT_GROUP`、`NEED_NOTIFY`，可选 `INTERNAL_APP`、`PRIORITY`、`KEY_SIM_DIR` |
-
-只有 `id` / `name` 是两边都出现的：CI 比对 `APP_ID == 目录名 == plugin.json.id`、`APP_NAME == plugin.json.name`，不一致会失败。旧版 const 里的 `PLUGIN_VERSION` 等字段不再被客户端读取，也不被检查，可以删掉。`const.py` 示例：
-
-```python
-APP_ID = "sample_plugin"
-APP_NAME = "示例插件"
-DEFAULT_GROUP = False
-NEED_NOTIFY = False
-# 可选：INTERNAL_APP、PRIORITY、KEY_SIM_DIR
-```
-
-## 本地命令
-
-```shell
-# 校验仓库
-python scripts/validate_plugin.py --strict
-
-# 本地打包，输出 dist/<id>.zip 和 sha256
-python scripts/build_zip.py
-```
-
-打包有体积上限：`<id>.zip` 不超过 50 MB，解压后总量不超过它的 10 倍。超过会被校验拒绝。
-
-CI 不使用你仓库里的 `scripts/`，而是使用官方模板对应版本的脚本，所以本地脚本过旧时可从模板复制最新版。
-
-## 本地调试
-
-把插件包目录复制到主程序：
-
-```text
-ZenlessZoneZero-OneDragon/plugins/<插件ID>/
-```
-
-启动主程序后刷新插件注册。加载失败时查看插件管理页。
 
 ## 发布版本
 
@@ -168,13 +82,11 @@ jobs:
 
 ## 提交到插件仓库
 
+详情页展示你仓库的 `README.md`。提交前把它换成插件介绍，模板里的建仓说明是给作者看的，对使用者没有用。
+
 1. 确认已有至少一个带 `<id>.zip` 附件的 Release。
 2. 打开插件仓库的 **提交插件** 页，粘贴仓库地址，确认预览无误后点 **提交**。
 3. 页面会打开一个预填好的 `[submission]` Issue，点 GitHub 的 *Submit new issue*。
 4. 机器人自动校验并开 PR，维护者审核合并后上架。进度都在 Issue 里回复。
 
 提交者必须是插件仓库的 admin。之后每次发新 Release，插件仓库会在 6 小时内自动同步，不需要再次提交。
-
-## 设置页
-
-`app_setting.py` 提供 `AppSettingProvider` 示例。接入真实设置界面时，把 `get_setting_cls()` 中的占位导入替换为自己的 `BaseInterface` 或 `AppSettingFlyout` 类。
