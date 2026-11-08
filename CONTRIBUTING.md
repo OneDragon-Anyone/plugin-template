@@ -93,23 +93,29 @@ ZenlessZoneZero-OneDragon/plugins/<插件ID>/
 
 ## 插件数据
 
-插件自己的持久化数据放 `plugin_data/<APP_ID>/`，全局一份，不按实例分。取目录：
+插件自己的持久化数据放 `plugin_data/<APP_ID>/`。主程序只给到这一层，路径里没有实例号：全局共享的数据直接放这里，要按实例分开就自己在下面再分一层。
+
+取目录：
 
 ```python
-data_dir = self.ctx.get_plugin_data_dir(const.APP_ID)   # Application 只有 ctx
-data_dir = self.data_dir                                # 工厂里有同名属性
+data_dir = self.ctx.get_plugin_data_dir(const.APP_ID)   # 应用里：Application 上没有 data_dir
+data_dir = self.data_dir                                # 工厂里：ApplicationFactory 的属性
 ```
 
 返回 `Path`，目录不存在时自动创建。位置在插件代码之外，插件更新覆盖代码不会丢。
+
+按实例再分一层（编号和本体 `config/<NN>/` 一致）：
+
+```python
+instance_dir = data_dir / f"{self.ctx.current_instance_idx:02d}"   # 应用里，与取运行记录用的是同一个
+```
 
 存 yml 用 `YamlOperator`，不用在外面包一层类：
 
 ```python
 from one_dragon.base.config.yaml_operator import YamlOperator
 
-from . import const
-
-data = YamlOperator(str(self.ctx.get_plugin_data_dir(const.APP_ID) / "run_record.yml"))
+data = YamlOperator(str(data_dir / "run_record.yml"))   # 按实例分的话换成 instance_dir
 data.update("run_count", int(data.get("run_count", 0) or 0) + 1)
 ```
 
