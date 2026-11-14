@@ -12,7 +12,7 @@ permissions:
 jobs:
   validate:
     if: github.repository != 'OneDragon-Anyone/plugin-template'
-    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-validate.yml@v1
+    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-validate.yml@master
 
   # 模板仓库自身用当前提交的工具自测
   self-test:

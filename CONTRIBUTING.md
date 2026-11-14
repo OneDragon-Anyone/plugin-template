@@ -161,8 +161,8 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@v1
+    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@master
 ```
 
-- `@v1` 跟随官方 v1 版本的修复，不会有破坏性变化。
-- 想完全锁定，可把 `@v1` 换成具体的提交 sha，例如 `@3f2c1e...`。
+- `@master` 跟随官方模板仓 master 的最新代码，不用手动升级。
+- 想固定版本，可把 `@master` 换成 `v1` 这样的版本 tag，或具体的提交 sha，例如 `@3f2c1e...`。
