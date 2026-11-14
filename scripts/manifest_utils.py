@@ -50,17 +50,17 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def is_factory_file(name: str) -> bool:
-    """与主程序一致：推荐 ``factory.py``，旧写法 ``*_factory.py`` 兼容。"""
-    return name == FACTORY_FILE_NAME or name.endswith("_" + FACTORY_FILE_NAME)
+    """插件包固定用 ``factory.py``，不再接受 ``*_factory.py`` 旧写法。"""
+    return name == FACTORY_FILE_NAME
 
 
 def is_const_file(name: str) -> bool:
-    """与主程序一致：推荐 ``const.py``，旧写法 ``*_const.py`` 兼容。"""
-    return name == CONST_FILE_NAME or name.endswith("_" + CONST_FILE_NAME)
+    """插件包固定用 ``const.py``，不再接受 ``*_const.py`` 旧写法。"""
+    return name == CONST_FILE_NAME
 
 
 def is_app_setting_file(name: str) -> bool:
-    return name == APP_SETTING_FILE_NAME or name.endswith("_" + APP_SETTING_FILE_NAME)
+    return name == APP_SETTING_FILE_NAME
 
 
 def top_level_py_files(package_dir: Path) -> list[Path]:
@@ -80,9 +80,9 @@ def has_factory_and_const(package_dir: Path) -> bool:
 
 
 def find_package_dirs(repo: Path) -> list[Path]:
-    """插件包目录：非隐藏子目录，第一层同时有工厂文件和常量文件。
+    """插件包目录：非隐藏子目录，第一层同时有固定名的工厂文件和常量文件。
 
-    判据与主程序一致，plugin.json 不参与判定（缺少时由校验单独报错）。
+    plugin.json 不参与判定（缺少时由校验单独报错）。
     """
     return sorted(
         child
