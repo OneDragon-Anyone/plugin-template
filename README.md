@@ -4,9 +4,9 @@
 
 - 在线插件市场：<https://onedragon-anyone.github.io/plugin-data/>
 - 客户端：<https://github.com/OneDragon-Anything/ZenlessZoneZero-OneDragon>
+- 市场仓：<https://github.com/OneDragon-Anyone/plugin-market>（插件服务）
 - **模板仓**：<https://github.com/OneDragon-Anyone/plugin-template>（插件参考）
 - 数据仓：<https://github.com/OneDragon-Anyone/plugin-data>（插件提交）
-- 市场仓：<https://github.com/OneDragon-Anyone/plugin-market>（插件服务）
 
 如果你只是想查包结构、字段与代码规范，请看 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
@@ -65,7 +65,7 @@ git push origin v0.2.0
 插件市场详情页展示你插件仓库的 `README.md`。提交前把它换成插件介绍，模板里的建仓说明是给作者看的，对使用者没有用。
 
 1. 确认已有至少一个带 `<id>.zip` 附件的 Release。
-2. 打开插件市场的 **提交插件** 页，粘贴仓库地址，确认预览无误后点 **提交**。
+2. 打开插件市场的 [提交插件页](https://onedragon-anyone.github.io/plugin-data/submission/) ，粘贴仓库地址点 **预检**，确认插件信息和 Release 附件无误，勾完三项确认后点 **创建收录申请**。
 3. 页面会打开一个预填好的 `[submission]` Issue，点 GitHub 的 *Submit new issue*。
 4. 机器人自动校验并开 PR，维护者审核合并后上架。进度都在 Issue 里回复。
 
