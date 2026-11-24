@@ -1,4 +1,6 @@
-name: Reusable Plugin Validate
+# 兼容转发：校验逻辑已迁到 plugin-tools。仍引用 plugin-template@master 的旧仓库会自动走新工具。
+# 新仓库请直接引用 OneDragon-Anyone/plugin-tools 的同名工作流。
+name: Reusable Plugin Validate (forwarder)
 
 on:
   workflow_call:
@@ -12,31 +14,6 @@ permissions:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout plugin repository
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Checkout template tools at the exact workflow commit
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ job.workflow_repository }}
-          ref: ${{ job.workflow_sha }}
-          path: .plugin-template
-          persist-credentials: false
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ inputs.python-version }}
-
-      - name: Validate repository
-        run: |
-          python .plugin-template/scripts/validate_plugin.py --repo . --strict
-
-      - name: Build and validate release asset
-        id: build
-        run: |
-          python .plugin-template/scripts/build_zip.py --repo . --out "$RUNNER_TEMP/dist"
-          python .plugin-template/scripts/validate_plugin.py --zip "$RUNNER_TEMP"/dist/*.zip
+    uses: OneDragon-Anyone/plugin-tools/.github/workflows/reusable-validate.yml@v1
+    with:
+      python-version: ${{ inputs.python-version }}

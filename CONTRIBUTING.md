@@ -90,17 +90,21 @@ NEED_NOTIFY = False
 
 ## 本地命令
 
+本地验证是可选的，CI 在推送时会自动校验。想少等一轮，可克隆官方工具到临时目录运行，版本与 CI 一致：
+
 ```shell
+git clone --depth 1 --branch v1 https://github.com/OneDragon-Anyone/plugin-tools.git .plugin-tools
+
 # 校验仓库
-python scripts/validate_plugin.py --strict
+python .plugin-tools/scripts/validate_plugin.py --repo . --strict
 
 # 本地打包，输出 dist/<id>.zip 和 sha256
-python scripts/build_zip.py
+python .plugin-tools/scripts/build_zip.py --repo .
 ```
 
 打包有体积上限：`<id>.zip` 不超过 50 MB，解压后总量不超过它的 10 倍。超过会被校验拒绝。
 
-CI 使用模板仓对应版本的脚本，本地脚本以该版本为准。版本怎么跟随见[工作流版本](#工作流版本)。
+CI 和上面的命令都使用 [plugin-tools](https://github.com/OneDragon-Anyone/plugin-tools) 的脚本，不需要复制到自己的仓库。版本怎么跟随见[工作流版本](#工作流版本)。
 
 ## 本地调试
 
@@ -161,8 +165,8 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@master
+    uses: OneDragon-Anyone/plugin-tools/.github/workflows/reusable-release.yml@v1
 ```
 
-- `@master` 跟随官方模板仓 master 的最新代码，不用手动升级。
-- 想固定版本，可把 `@master` 换成 `v1` 这样的版本 tag，或具体的提交 sha，例如 `@3f2c1e...`。
+- `@v1` 跟随 plugin-tools 的 v1 系列修复，不会有破坏性变化。
+- 想固定版本，可把 `@v1` 换成 `v1.0.0` 这样的完整版本 tag，或具体的提交 sha，例如 `@3f2c1e...`。
