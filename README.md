@@ -3,9 +3,6 @@
 绝区零一条龙（ZenlessZoneZero-OneDragon）第三方插件模板。用本模板创建仓库、写代码、推送 tag，GitHub Actions 会自动校验并发布 `<id>.zip`，之后到插件市场提交即可上架。本文讲从建仓到上架的流程。
 
 - 在线插件市场：<https://onedragon-anyone.github.io/plugin-data/>
-- 客户端：<https://github.com/OneDragon-Anything/ZenlessZoneZero-OneDragon>
-- 市场仓：<https://github.com/OneDragon-Anyone/plugin-market>（插件服务）
-- **模板仓**：<https://github.com/OneDragon-Anyone/plugin-template>（插件参考）
 - 数据仓：<https://github.com/OneDragon-Anyone/plugin-data>（插件提交）
 
 如果你只是想查包结构、字段与代码规范，请看 [CONTRIBUTING.md](CONTRIBUTING.md)。
