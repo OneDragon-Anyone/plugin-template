@@ -12,4 +12,4 @@ jobs:
   release:
     # 模板仓库自身的 tag 只用于作者仓固定版本，不发布示例插件
     if: github.repository != 'OneDragon-Anyone/plugin-template'
-    uses: OneDragon-Anyone/plugin-template/.github/workflows/reusable-release.yml@master
+    uses: OneDragon-Anyone/plugin-tools/.github/workflows/reusable-release.yml@v1

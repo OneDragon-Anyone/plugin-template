@@ -17,7 +17,6 @@ your-repo/
 ├── .github/workflows/
 │   ├── release.yml            # 推送 v* tag 时发布（只调用官方可复用工作流）
 │   └── validate.yml           # 推送和 PR 时校验
-├── scripts/                   # 本地校验和打包脚本
 └── sample_plugin/             # 插件包，目录名 = 插件 ID，会被整体打进 zip
     ├── plugin.json            # 上架必需：网页展示用的元数据，不参与运行时身份
     ├── __init__.py            # 必需：插件包按 Python 包加载
